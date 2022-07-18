@@ -698,7 +698,7 @@ typedef Transform<float,3,Isometry> Isometry3f;
 /** \ingroup Geometry_Module */
 typedef Transform<double,2,Isometry> Isometry2d;
 /** \ingroup Geometry_Module */
-typedef Transform<double,3,Isometry> Isometry3d;
+typedef Transform<double,3,Isometry,DontAlign> Isometry3d;
 
 /** \ingroup Geometry_Module */
 typedef Transform<float,2,Affine> Affine2f;
