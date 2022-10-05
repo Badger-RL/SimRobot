@@ -31,6 +31,7 @@
 #include <ctime>
 #endif
 #include <iostream>
+#include "Tools/Config.h"
 
 #define QDOCKWIDGET_STYLE ""
 #define QDOCKWIDGET_STYLE_FOCUS "QDockWidget {font-weight: bold;}"
@@ -42,6 +43,10 @@ SimRobot::Application* MainWindow::application;
 #else
 #define PATH_SEPARATOR "/"
 #endif
+
+
+std::mutex RLConfig::resetLock;
+bool RLConfig::resetting = false;
 
 MainWindow::MainWindow(int, char* argv[]) :
   appPath(getAppPath(argv[0])),
@@ -93,6 +98,8 @@ MainWindow::MainWindow(int, char* argv[]) :
   simResetAct->setShortcut(QKeySequence(static_cast<int>(Qt::SHIFT) + static_cast<int>(Qt::Key_F5)));
   simResetAct->setEnabled(false);
   connect(simResetAct, SIGNAL(triggered()), this, SLOT(simReset()));
+
+  connect(this, SIGNAL(reset()), this, SLOT(simReset()));
 
   simStartAct = new QAction(QIcon(":/Icons/control_play_blue.png"), tr("&Start"), this);
   simStartAct->setStatusTip(tr("Start or stop the simulation"));
@@ -1083,6 +1090,14 @@ void MainWindow::simReset()
   }
   if(!activeDockWidget)
     updateMenuAndToolBar();
+
+
+  RLConfig::resetLock.lock();
+  std::cout << "unlocking" << std::endl;
+  std::cout << "status" <<std::endl;
+  std::cout << RLConfig::resetting << std::endl;
+  RLConfig::resetting = false;
+  RLConfig::resetLock.unlock();
 
   // start!?
   if(compiled && wasRunning)
