@@ -44,6 +44,14 @@
 #include "Simulation/Sensors/DepthImageSensor.h"
 #include "Tools/Math/Constants.h"
 
+#include "iostream"
+#include "../../SimRobot/Tools/Config.h"
+
+#include <random>
+
+extern int RLConfig:: seed; 
+std::mt19937 prng(RLConfig::seed); 
+
 Parser::Parser() : errors(0), sceneMacro(0), recordingMacroElement(0), replayingMacroElement(0), element(0), elementData(0), passedSimulationTag(false)
 {
   static const ElementInfo elements[] =
@@ -175,6 +183,14 @@ Parser::Parser() : errors(0), sceneMacro(0), recordingMacroElement(0), replaying
   for(unsigned int i = 0; i < sizeof(elements) / sizeof(*elements); ++i)
     elementInfos[elements[i].name] = &elements[i];
 }
+
+float Parser::getRandomFloat(float a, float b) {
+    std::cout<<"CALL TO PRNG" << std::endl;
+    float random = ((float) prng()) / (float) prng.max();
+    float diff = b - a;
+    float r = random * diff;
+    return a + r;
+  }
 
 Element* Parser::simulationElement()
 {
@@ -632,10 +648,41 @@ Element* Parser::translationElement()
 {
   Vector3f* translation = new Vector3f(getLength("x", false, 0.f), getLength("y", false, 0.f), getLength("z", false, 0.f));
 
+   
   SimObject* simObject = dynamic_cast<SimObject*>(element);
   if(simObject)
   {
     ASSERT(!simObject->translation);
+    float ballX = Parser::ballX;
+    float ballY = Parser::ballY;
+
+
+    float dummy1X =  (ballX  + 4.5) / 2; // why positive 4.5 and not negative 4.5? I think the field 
+    float dummy1Y = (ballY + 0) / 2;// might be reversed for robot 4? Maybe this is a team association thing?
+
+    float dummy2X =   (ballX + 0) / 2;
+    float dummy2Y = (ballY + 0) / 2;
+
+
+
+    if (simObject->name == "ball") {
+      translation = new Vector3f(ballX, ballY, getLength("z", false, 0.f));
+    }
+    if (RLConfig::mode == "dummy_defenders") // if we're in the dummy defenders rl env, we need to move the dummy defenders to block the path  
+    { // from the agent to the ball, and from the ball to the goal
+    if (simObject->name == "robot4") {
+      translation = new Vector3f(dummy1X, dummy1Y, getLength("z", false, 0.f));
+    }
+     if (simObject->name == "robot5") {
+      translation = new Vector3f(dummy2X, dummy2Y, getLength("z", false, 0.f));
+    }
+    }
+    else if (RLConfig::mode == "goalie") 
+    {
+    if (simObject->name == "robot4") {
+      translation = new Vector3f(4.1, 0, getLength("z", false, 0.f));
+    }
+    }
     simObject->translation = translation;
   }
   else
@@ -1326,13 +1373,20 @@ void Parser::handleError(const std::string& message, const Location& location)
 
 bool Parser::parse(const std::string& fileName, std::list<std::string>& errors)
 {
+
+
+  std::cout << fileName << std::endl;
+
+  Parser::ballX = Parser::getRandomFloat(-4.5, 4.5);
+  Parser::ballY = Parser::getRandomFloat(-3.0, 3.0);
+
   this->errors = &errors;
 
   ASSERT(!Simulation::simulation->scene);
 
   std::string::size_type i = fileName.find_last_of("/\\");
   parseRootDir = i != std::string::npos ? fileName.substr(0, i + 1) : std::string();
-
+ 
   // phase #1: reading the file and create "macros"
   size_t preErrorCount = errors.size();
   if(!readFile(fileName) || preErrorCount != errors.size())

@@ -14,6 +14,13 @@
 
 #include "MainWindow.h"
 
+#include "Tools/json.h"
+#include <fstream>
+#include <unistd.h>
+#include "Tools/Config.h"
+
+bool VISUALIZATION_MODE = RLConfig::visualization_mode;
+
 #ifdef MACOS
 #include <QFileOpenEvent>
 
@@ -88,7 +95,10 @@ int main(int argc, char* argv[])
   app.setApplicationName("SimRobot");
 
 #ifdef MACOS
-  mainWindow.show();
+  if (VISUALIZATION_MODE)
+  {
+    mainWindow.show();
+  }
 #endif
 
   // open file from commandline
@@ -100,7 +110,10 @@ int main(int argc, char* argv[])
     }
 
 #ifndef MACOS
-  mainWindow.show();
+  if (VISUALIZATION_MODE)
+  {
+    mainWindow.show();
+  }
 #endif
 
   return app.exec();
