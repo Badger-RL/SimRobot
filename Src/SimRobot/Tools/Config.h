@@ -1,6 +1,8 @@
 #ifndef RL_CONFIG
 #define RL_CONFIG
 
+#define MAC_OS
+
 #include <stdio.h>
 #include <string>
 #include <unistd.h>
@@ -9,14 +11,20 @@
 
 
 #include <libgen.h>         // dirname
-#include <linux/limits.h>   // PATH_MAX
+
+#define PATH_MAX 4096
 
 #include <mutex>
+
+#ifdef MAC_OS
+#include <mach-o/dyld.h>
+#endif
 
 
 //derived from https://stackoverflow.com/questions/23943239/how-to-get-path-to-current-exe-file-on-linux
 static std::string getConfigDirectory(){
 
+#ifdef LINUX
     char result[PATH_MAX];
     ssize_t count = readlink("/proc/self/exe", result, PATH_MAX);
     const char *path;
@@ -25,7 +33,26 @@ static std::string getConfigDirectory(){
     }
     std::string output(path);
     output = output + "/../../../../Config/rl_config.json";
-    std::cout << "Config Directory: " << output << std::endl;
+#endif
+  
+#ifdef MAC_OS
+    char buf [PATH_MAX];
+    uint32_t bufsize = PATH_MAX;
+    if(!_NSGetExecutablePath(buf, &bufsize))
+      puts(buf);
+  
+    std::string output_temp(buf);
+  
+    std::string output(output_temp);
+  
+    for (int i = output_temp.length(); i >= 0; i--) {
+      if (output[i] == '/')
+        break;
+      output.erase(i);
+    }
+    output = output + "../../../../../../../Config/rl_config.json";
+#endif
+  
     return output;
 }
 
