@@ -45,8 +45,8 @@ SimRobot::Application* MainWindow::application;
 #endif
 
 
-std::mutex RLConfig::resetLock;
 bool RLConfig::resetting = false;
+std::mutex RLConfig::resetLock;
 
 MainWindow::MainWindow(int, char* argv[]) :
   appPath(getAppPath(argv[0])),
